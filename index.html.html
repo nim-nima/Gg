@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>آمار روزانه انبار آرژانتین</title>
+  <style>
+    body { font-family: sans-serif; direction: rtl; padding: 20px; max-width: 800px; margin: auto; }
+    h2 { text-align: center; margin-bottom: 20px; }
+    textarea { width: 100%; height: 100px; }
+    input, button { margin: 10px 0; padding: 10px; font-size: 16px; width: 100%; box-sizing: border-box; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+    th, td { border: 1px solid #aaa; padding: 4px; text-align: center; }
+    .col { width: 33%; vertical-align: top; }
+    .nowrap { white-space: nowrap; }
+    @media print {
+      body { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <h2>آمار روزانه انبار آرژانتین</h2>
+
+  <label>تاریخ (شمسی):</label>
+  <input type="text" id="dateInput" placeholder="مثلاً 1403/03/03">
+
+  <label>تعداد کیسه‌ها برای هر کالا (هر خط: نام کالا = تعداد):</label>
+  <textarea id="rawInput" placeholder="P100(n) Jam = 20"></textarea>
+
+  <button onclick="generateTable()">ساخت جدول</button>
+  <button onclick="downloadPDF()">دانلود PDF</button>
+
+  <div id="tableContainer"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const allItems = `0035 Bandar Emam
+BL3 Jam
+P100(n) Jam
+P100(b) Shazand
+020 Bandar Emam
+0190 Arya Sasol
+LLD 209 Shazand
+52518 jam
+Hi500 Bandar Emam
+54b04 Lorestan
+62n07 Lorestan
+1922 Laleh
+C30S Marun
+HP500 Marun
+Z30s Marun
+552R Jam
+552R Shazand
+552R Marun
+548T Jam
+548R Jam
+548R Navid Zar Shimi
+440L Jam
+440G Jam
+3130 Jam
+R40 Shazand
+RP340 Jam
+RP340 Marun
+RP345 Jam
+MR230 Marun
+ABS150 Tabriz
+ABSN45 Ghaedbasir
+ABSN50 Ghaedbasir
+ABSN70 Ghaedbasir
+ABS 10417 Ghaedbasir
+ABS 10415 Ghaedbasir
+ABS 10415 Tabriz
+ABS 10720(W)Ghaedbsir
+ABS 90913 Ghaedbasir
+7240 Tabriz
+1540 Tabriz
+1551Takhte Jamshid
+1115 Petro Paak
+3160 Jam
+Pp 30% Normand polymer
+Pa6 nc epsan
+Pa6 30 nc epsan
+Pa6 30 bk epsan
+Pa66 nc epsan
+Pa66 30 nc epsan
+Pa66 30 bk epsan
+Pa6 2500 j
+Pa6 nc nivan
+Pa6 bk nivan
+Pa630 nc nivan
+Pa630 bk nivan
+Tpu
+Tpe
+Pvc 110
+Pvc 106
+Pvc 102
+Pvc 90
+Pvc 70
+Pvc 129
+Behsa
+Corbi
+Pps`.split('\n');
+
+    function generateTable() {
+      const raw = document.getElementById('rawInput').value.trim();
+      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+      const data = {};
+
+      lines.forEach(line => {
+        const [name, count] = line.split('=').map(x => x.trim());
+        if (name && count) data[name] = count;
+      });
+
+      let cols = [[], [], []];
+      let i = 0;
+      allItems.forEach(item => {
+        let val = data[item] || '';
+        cols[i % 3].push(`<tr><td class="nowrap">${item}</td><td>${val}</td></tr>`);
+        i++;
+      });
+
+      document.getElementById('tableContainer').innerHTML = `
+        <table>
+          <thead><tr><th>نام کالا</th><th>تعداد</th></tr></thead>
+          <tbody><tr>
+            <td class="col"><table>${cols[0].join('')}</table></td>
+            <td class="col"><table>${cols[1].join('')}</table></td>
+            <td class="col"><table>${cols[2].join('')}</table></td>
+          </tr></tbody>
+        </table>`;
+    }
+
+    async function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a5' });
+      const date = document.getElementById('dateInput').value || 'بدون تاریخ';
+      doc.setFontSize(14);
+      doc.text(`آمار روزانه انبار آرژانتین`, 210, 30, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(`تاریخ: ${date}`, 210, 50, { align: 'center' });
+
+      const element = document.getElementById('tableContainer');
+      await doc.html(element, {
+        x: 10, y: 60,
+        html2canvas: { scale: 0.5 },
+        callback: function (doc) {
+          doc.save(`amar-${date}.pdf`);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
